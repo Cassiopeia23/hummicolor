@@ -24,6 +24,7 @@ export default function WebcamCanvas({
   const streamRef = useRef<MediaStream | null>(null);
 
   const [cameraDenied, setCameraDenied] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
   const [imageEl, setImageEl] = useState<HTMLImageElement | null>(null);
   const [points, setPoints] = useState<Point[]>([]);
   const [isClosed, setIsClosed] = useState(false);
@@ -34,7 +35,7 @@ export default function WebcamCanvas({
       return videoRef.current;
     }
     return imageEl;
-  }, [imageEl]);
+  }, [imageEl, isVideoReady]);
 
   useEffect(() => {
     const startCamera = async (): Promise<void> => {
@@ -49,10 +50,15 @@ export default function WebcamCanvas({
         video.playsInline = true;
         video.muted = true;
         video.srcObject = stream;
+        video.onloadeddata = () => {
+          setIsVideoReady(true);
+        };
         await video.play();
         videoRef.current = video;
+        setIsVideoReady(video.readyState >= 2);
         setCameraDenied(false);
       } catch {
+        setIsVideoReady(false);
         setCameraDenied(true);
       }
     };
