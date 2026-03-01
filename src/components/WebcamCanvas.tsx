@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent, MouseEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ChangeEvent, PointerEvent } from 'react';
 import type { DemoColor, MaskData, Point } from '../types';
 import { exportMask, findNearestVertex, fromNormalizedPoints, parseMask, toNormalizedPoints } from '../utils/mask';
 import { renderFrame } from '../utils/render';
@@ -8,6 +8,7 @@ type WebcamCanvasProps = {
   selectedColor: DemoColor;
   opacityPercent: number;
   shadingMode: boolean;
+  arLightMode: boolean;
 };
 
 const CANVAS_WIDTH = 960;
@@ -17,6 +18,7 @@ export default function WebcamCanvas({
   selectedColor,
   opacityPercent,
   shadingMode,
+  arLightMode,
 }: WebcamCanvasProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -24,11 +26,79 @@ export default function WebcamCanvas({
   const streamRef = useRef<MediaStream | null>(null);
 
   const [cameraDenied, setCameraDenied] = useState(false);
+  const [cameraErrorMessage, setCameraErrorMessage] = useState('');
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [imageEl, setImageEl] = useState<HTMLImageElement | null>(null);
   const [points, setPoints] = useState<Point[]>([]);
   const [isClosed, setIsClosed] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [lightVector, setLightVector] = useState({ x: 0, y: -0.3 });
+
+  const canUseCamera = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+
+  const isLikelySecureContext =
+    typeof window !== 'undefined' &&
+    (window.isSecureContext || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  const startCamera = useCallback(async (): Promise<void> => {
+    if (!canUseCamera) {
+      setCameraDenied(true);
+      setCameraErrorMessage('Dein Browser unterstützt keine Kamera-API (getUserMedia).');
+      return;
+    }
+
+    if (!isLikelySecureContext) {
+      setCameraDenied(true);
+      setCameraErrorMessage('Kamera braucht HTTPS oder localhost. Öffne die App über https://.');
+      return;
+    }
+
+    try {
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: CANVAS_WIDTH },
+          height: { ideal: CANVAS_HEIGHT },
+          facingMode: { ideal: 'environment' },
+        },
+        audio: false,
+      });
+      streamRef.current = stream;
+
+      const video = document.createElement('video');
+      video.playsInline = true;
+      video.muted = true;
+      video.autoplay = true;
+      video.srcObject = stream;
+      video.onloadeddata = () => {
+        setIsVideoReady(true);
+      };
+
+      await video.play();
+
+      videoRef.current = video;
+      setIsVideoReady(video.readyState >= 2);
+      setCameraDenied(false);
+      setCameraErrorMessage('');
+    } catch (error) {
+      setIsVideoReady(false);
+      setCameraDenied(true);
+
+      if (error instanceof DOMException) {
+        if (error.name === 'NotAllowedError') {
+          setCameraErrorMessage('Kamera blockiert. Bitte Berechtigung im Browser aktivieren.');
+          return;
+        }
+        if (error.name === 'NotFoundError') {
+          setCameraErrorMessage('Keine Kamera gefunden.');
+          return;
+        }
+      }
+
+      setCameraErrorMessage('Kamera konnte nicht gestartet werden. Nutze sonst den Bild-Upload.');
+    }
+  }, [canUseCamera, isLikelySecureContext]);
 
   const source = useMemo<CanvasImageSource | null>(() => {
     if (videoRef.current && videoRef.current.readyState >= 2) {
@@ -38,31 +108,6 @@ export default function WebcamCanvas({
   }, [imageEl, isVideoReady]);
 
   useEffect(() => {
-    const startCamera = async (): Promise<void> => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT },
-          audio: false,
-        });
-        streamRef.current = stream;
-
-        const video = document.createElement('video');
-        video.playsInline = true;
-        video.muted = true;
-        video.srcObject = stream;
-        video.onloadeddata = () => {
-          setIsVideoReady(true);
-        };
-        await video.play();
-        videoRef.current = video;
-        setIsVideoReady(video.readyState >= 2);
-        setCameraDenied(false);
-      } catch {
-        setIsVideoReady(false);
-        setCameraDenied(true);
-      }
-    };
-
     void startCamera();
 
     return () => {
@@ -71,7 +116,24 @@ export default function WebcamCanvas({
       }
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };
-  }, []);
+  }, [startCamera]);
+
+  useEffect(() => {
+    if (!arLightMode || typeof window === 'undefined') {
+      return;
+    }
+
+    const onTilt = (event: DeviceOrientationEvent): void => {
+      const beta = event.beta ?? 0;
+      const gamma = event.gamma ?? 0;
+      const x = Math.max(-1, Math.min(1, gamma / 60));
+      const y = Math.max(-1, Math.min(1, beta / 90));
+      setLightVector({ x, y });
+    };
+
+    window.addEventListener('deviceorientation', onTilt);
+    return () => window.removeEventListener('deviceorientation', onTilt);
+  }, [arLightMode]);
 
   useEffect(() => {
     const draw = (): void => {
@@ -93,6 +155,7 @@ export default function WebcamCanvas({
           color: selectedColor.rgb,
           opacity: opacityPercent / 100,
           shadingMode,
+          lightVector: arLightMode ? lightVector : undefined,
         });
       } else {
         ctx.fillStyle = '#20242d';
@@ -131,32 +194,32 @@ export default function WebcamCanvas({
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [source, points, isClosed, selectedColor, opacityPercent, shadingMode]);
+  }, [source, points, isClosed, selectedColor, opacityPercent, shadingMode, arLightMode, lightVector]);
 
-  const relativePoint = (event: MouseEvent<HTMLCanvasElement>): Point => {
+  const relativePoint = (event: PointerEvent<HTMLCanvasElement>): Point => {
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * CANVAS_WIDTH;
     const y = ((event.clientY - rect.top) / rect.height) * CANVAS_HEIGHT;
     return { x, y };
   };
 
-  const handleCanvasClick = (event: MouseEvent<HTMLCanvasElement>): void => {
-    if (isClosed) {
-      return;
-    }
-    const p = relativePoint(event);
-    setPoints((prev) => [...prev, p]);
-  };
+  const handlePointerDown = (event: PointerEvent<HTMLCanvasElement>): void => {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
 
-  const handleMouseDown = (event: MouseEvent<HTMLCanvasElement>): void => {
     const p = relativePoint(event);
     const idx = findNearestVertex(points, p);
     if (idx >= 0) {
       setDragIdx(idx);
+      return;
+    }
+
+    if (!isClosed) {
+      setPoints((prev) => [...prev, p]);
     }
   };
 
-  const handleMouseMove = (event: MouseEvent<HTMLCanvasElement>): void => {
+  const handlePointerMove = (event: PointerEvent<HTMLCanvasElement>): void => {
     if (dragIdx === null) {
       return;
     }
@@ -164,7 +227,8 @@ export default function WebcamCanvas({
     setPoints((prev) => prev.map((point, idx) => (idx === dragIdx ? p : point)));
   };
 
-  const handleMouseUp = (): void => {
+  const handlePointerUp = (event: PointerEvent<HTMLCanvasElement>): void => {
+    event.currentTarget.releasePointerCapture(event.pointerId);
     setDragIdx(null);
   };
 
@@ -239,6 +303,9 @@ export default function WebcamCanvas({
   return (
     <section className="canvas-area">
       <div className="toolbar">
+        {!isVideoReady && (
+          <button onClick={() => void startCamera()}>Enable camera</button>
+        )}
         <button onClick={closePolygon} disabled={points.length < 3 || isClosed}>
           Close polygon
         </button>
@@ -250,10 +317,13 @@ export default function WebcamCanvas({
           <input type="file" accept="application/json" onChange={onLoadMask} />
         </label>
         {cameraDenied && (
-          <label className="file-btn">
-            Upload image fallback
-            <input type="file" accept="image/*" onChange={onUploadImage} />
-          </label>
+          <>
+            <label className="file-btn">
+              Upload image fallback
+              <input type="file" accept="image/*" onChange={onUploadImage} />
+            </label>
+            {cameraErrorMessage && <p className="camera-hint">{cameraErrorMessage}</p>}
+          </>
         )}
       </div>
 
@@ -262,11 +332,10 @@ export default function WebcamCanvas({
           ref={canvasRef}
           width={CANVAS_WIDTH}
           height={CANVAS_HEIGHT}
-          onClick={handleCanvasClick}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         />
       </div>
     </section>

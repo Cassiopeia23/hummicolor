@@ -10,6 +10,7 @@ type RenderParams = {
   color: [number, number, number];
   opacity: number;
   shadingMode: boolean;
+  lightVector?: { x: number; y: number };
 };
 
 const drawPolygonPath = (ctx: CanvasRenderingContext2D, polygon: Point[]): void => {
@@ -35,6 +36,7 @@ export const renderFrame = ({
   color,
   opacity,
   shadingMode,
+  lightVector,
 }: RenderParams): void => {
   ctx.clearRect(0, 0, width, height);
   ctx.drawImage(source, 0, 0, width, height);
@@ -53,8 +55,17 @@ export const renderFrame = ({
     const alpha = Math.max(0, Math.min(1, opacity));
 
     for (let i = 0; i < data.length; i += 4) {
+      const pixelIdx = i / 4;
+      const px = pixelIdx % width;
+      const py = Math.floor(pixelIdx / width);
+      const nx = (px / Math.max(1, width - 1)) * 2 - 1;
+      const ny = (py / Math.max(1, height - 1)) * 2 - 1;
+
       const lum = (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255;
-      const shade = 0.45 + lum * 0.75;
+      const directional = lightVector
+        ? Math.max(-0.25, Math.min(0.25, (nx * lightVector.x + ny * lightVector.y) * 0.18))
+        : 0;
+      const shade = 0.45 + lum * 0.75 + directional;
       const tr = Math.max(0, Math.min(255, color[0] * shade));
       const tg = Math.max(0, Math.min(255, color[1] * shade));
       const tb = Math.max(0, Math.min(255, color[2] * shade));
