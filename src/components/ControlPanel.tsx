@@ -7,10 +7,12 @@ type ControlPanelProps = {
   search: string;
   opacityPercent: number;
   shadingMode: boolean;
+  arLightMode: boolean;
   onSearchChange: (value: string) => void;
   onSelectColor: (color: DemoColor) => void;
   onOpacityChange: (value: number) => void;
   onShadingToggle: (value: boolean) => void;
+  onArLightToggle: (value: boolean) => void;
 };
 
 const toRgbCss = (rgb: [number, number, number]): string => `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
@@ -21,10 +23,12 @@ export default function ControlPanel({
   search,
   opacityPercent,
   shadingMode,
+  arLightMode,
   onSearchChange,
   onSelectColor,
   onOpacityChange,
   onShadingToggle,
+  onArLightToggle,
 }: ControlPanelProps): JSX.Element {
   const normalizedSearch = search.trim().toLowerCase();
 
@@ -102,6 +106,15 @@ export default function ControlPanel({
           onChange={(e) => onShadingToggle(e.target.checked)}
         />
         Shading mode
+      </label>
+
+      <label className="toggle-row">
+        <input
+          type="checkbox"
+          checked={arLightMode}
+          onChange={(e) => onArLightToggle(e.target.checked)}
+        />
+        AR light follow (device tilt)
       </label>
 
       <div className="list" role="listbox" aria-label="NCS style colors">
