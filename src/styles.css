@@ -1,0 +1,178 @@
+:root {
+  font-family: Inter, Segoe UI, Roboto, sans-serif;
+  color: #e9ecf5;
+  background: #12161f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  min-height: 100vh;
+}
+
+.canvas-area {
+  padding: 18px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+button,
+.file-btn {
+  background: #273449;
+  border: 1px solid #3e4d66;
+  color: #ecf4ff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.file-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.file-btn input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+canvas {
+  width: 100%;
+  max-width: 960px;
+  border-radius: 10px;
+  background: #1c2331;
+  border: 1px solid #3e4d66;
+}
+
+.panel {
+  border-left: 1px solid #2f384b;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #171d29;
+}
+
+.panel h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.disclaimer {
+  margin: 0;
+  font-size: 12px;
+  color: #96a4be;
+}
+
+.field-label {
+  font-size: 12px;
+  color: #b6c2d8;
+}
+
+.search-input {
+  background: #101520;
+  border: 1px solid #39445c;
+  color: #f3f6ff;
+  border-radius: 8px;
+  padding: 9px;
+}
+
+.selected-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid #3a4560;
+  border-radius: 8px;
+}
+
+.swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid #ffffff4d;
+}
+
+.selected-code {
+  font-weight: 600;
+}
+
+.selected-rgb {
+  font-size: 12px;
+  color: #a6b3cb;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.list {
+  border: 1px solid #3a4560;
+  border-radius: 8px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  background: #111721;
+}
+
+.list-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: none;
+  border-bottom: 1px solid #273244;
+  background: transparent;
+  color: #eef2fd;
+  text-align: left;
+}
+
+.list-item.active {
+  background: #2b3850;
+}
+
+.chip {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid #ffffff55;
+}
+
+@media (max-width: 1200px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    border-left: none;
+    border-top: 1px solid #2f384b;
+    min-height: 40vh;
+  }
+}
