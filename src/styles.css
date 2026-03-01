@@ -1,7 +1,7 @@
 :root {
   font-family: Inter, Segoe UI, Roboto, sans-serif;
   color: #e9ecf5;
-  background: #12161f;
+  background: radial-gradient(circle at 10% 0%, #1d2b43 0%, #101722 45%, #0b111b 100%);
 }
 
 * {
@@ -10,16 +10,23 @@
 
 body {
   margin: 0;
+  min-height: 100vh;
 }
 
 .app-shell {
   display: grid;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   min-height: 100vh;
+  gap: 14px;
+  padding: 14px;
 }
 
 .canvas-area {
-  padding: 18px;
+  padding: 14px;
+  border: 1px solid #2a3850;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #111a2a 0%, #0e1522 100%);
+  box-shadow: 0 24px 60px #02060d66;
 }
 
 .toolbar {
@@ -31,13 +38,24 @@ body {
 
 button,
 .file-btn {
-  background: #273449;
-  border: 1px solid #3e4d66;
+  background: #24354f;
+  border: 1px solid #3f5677;
   color: #ecf4ff;
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 10px;
+  padding: 8px 11px;
   font-size: 13px;
   cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+button:hover,
+.file-btn:hover {
+  background: #2f4566;
+}
+
+button:active,
+.file-btn:active {
+  transform: translateY(1px);
 }
 
 button:disabled {
@@ -59,26 +77,37 @@ button:disabled {
   height: 0;
 }
 
+.stage-shell {
+  position: sticky;
+  top: 14px;
+  width: min(100%, 1080px);
+}
+
 canvas {
   width: 100%;
   max-width: 960px;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #1c2331;
   border: 1px solid #3e4d66;
+  display: block;
 }
 
 .panel {
-  border-left: 1px solid #2f384b;
+  border: 1px solid #2d3b53;
+  border-radius: 14px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: #171d29;
+  background: linear-gradient(180deg, #151f30 0%, #111a29 100%);
+  max-height: calc(100vh - 28px);
+  overflow: auto;
 }
 
 .panel h1 {
   margin: 0;
-  font-size: 18px;
+  font-size: 24px;
+  line-height: 1.15;
 }
 
 .disclaimer {
@@ -93,26 +122,50 @@ canvas {
 }
 
 .search-input {
-  background: #101520;
+  background: #0f1622;
   border: 1px solid #39445c;
   color: #f3f6ff;
-  border-radius: 8px;
-  padding: 9px;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.tone-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill {
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  background: #1c2a40;
+}
+
+.pill.active {
+  background: #38609a;
+}
+
+.result-count {
+  margin: 0;
+  font-size: 12px;
+  color: #9db0cf;
 }
 
 .selected-block {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px;
+  padding: 10px;
   border: 1px solid #3a4560;
-  border-radius: 8px;
+  border-radius: 10px;
+  background: #101827;
 }
 
 .swatch {
   width: 36px;
   height: 36px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid #ffffff4d;
 }
 
@@ -134,7 +187,7 @@ canvas {
 
 .list {
   border: 1px solid #3a4560;
-  border-radius: 8px;
+  border-radius: 10px;
   overflow-y: auto;
   min-height: 0;
   flex: 1;
@@ -146,7 +199,7 @@ canvas {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 10px;
   border: none;
   border-bottom: 1px solid #273244;
   background: transparent;
@@ -165,14 +218,50 @@ canvas {
   border: 1px solid #ffffff55;
 }
 
+.empty-state {
+  margin: 12px;
+  color: #9db0cf;
+  font-size: 13px;
+}
+
 @media (max-width: 1200px) {
   .app-shell {
     grid-template-columns: 1fr;
   }
 
   .panel {
-    border-left: none;
-    border-top: 1px solid #2f384b;
-    min-height: 40vh;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .canvas-area,
+  .panel {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .stage-shell {
+    position: static;
+  }
+
+  .toolbar {
+    gap: 6px;
+  }
+
+  button,
+  .file-btn {
+    font-size: 12px;
+    padding: 7px 9px;
+  }
+
+  .panel h1 {
+    font-size: 20px;
   }
 }
