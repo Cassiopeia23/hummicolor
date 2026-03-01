@@ -64,7 +64,15 @@ export const renderFrame = ({
       data[i + 2] = Math.round(data[i + 2] * (1 - alpha) + tb * alpha);
     }
 
-    ctx.putImageData(imageData, 0, 0);
+    const shadedCanvas = document.createElement('canvas');
+    shadedCanvas.width = width;
+    shadedCanvas.height = height;
+    const shadedCtx = shadedCanvas.getContext('2d');
+
+    if (shadedCtx) {
+      shadedCtx.putImageData(imageData, 0, 0);
+      ctx.drawImage(shadedCanvas, 0, 0);
+    }
   } else {
     ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity})`;
     ctx.fillRect(0, 0, width, height);
